@@ -7,6 +7,8 @@ import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.android.movieapponetestone.R;
@@ -29,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private ModelAdapter adapter;
+    private TextView emptyView;
 
 
     @Override
@@ -42,13 +45,15 @@ public class MainActivity extends AppCompatActivity {
 
         adapter = new ModelAdapter(popularArrayList, getApplicationContext());
 
+        emptyView = findViewById(R.id.empty_view);
+
         int numberOfColumns = 2;
 
         recyclerView.setLayoutManager(new GridLayoutManager(this, numberOfColumns));
 
         recyclerView.setAdapter(adapter);
 
-        getPopular();
+        getMovies(App.getApi().getPopularMovies(KEY), "Sorry, ... Internet to view the most popular movies.");
 
     }
 
@@ -59,15 +64,25 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
+    private void emptyView() {
+        if (popularArrayList.isEmpty()) {
+            recyclerView.setVisibility(View.GONE);
+            emptyView.setVisibility(View.VISIBLE);
+        } else {
+            recyclerView.setVisibility(View.VISIBLE);
+            emptyView.setVisibility(View.GONE);
+        }
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
         switch (item.getItemId()){
             case R.id.popular:
-                getPopular();
+                getMovies(App.getApi().getPopularMovies(KEY), "Sorry, ... Internet to view the most popular movies.");
                 return true;
             case R.id.top_rated:
-                getTopRatedMovies();
+                getMovies(App.getApi().getTopRatedMovies(KEY), "Sorry, ... Internet to view the most top rated movies.");
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -75,37 +90,28 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void getPopular() {
 
-    App.getApi().getPopularMovies(KEY).enqueue(new Callback<Result>() {
-        @Override
-        public void onResponse(Call<Result> call, Response<Result> response) {
-            popularArrayList.clear();
-            adapter.setData(response.body().getResults());
-        }
+    private void getMovies(Call<Result> resultCall, final String message) {
 
-        @Override
-        public void onFailure(Call<Result> call, Throwable t) {
-
-        }
-    });
-    }
-
-    private void getTopRatedMovies() {
-
-        App.getApi().getTopRatedMovies(KEY).enqueue(new Callback<Result>() {
+       resultCall.enqueue(new Callback<Result>() {
             @Override
             public void onResponse(Call<Result> call, Response<Result> response) {
                 popularArrayList.clear();
                 adapter.setData(response.body().getResults());
-
             }
 
             @Override
             public void onFailure(Call<Result> call, Throwable t) {
-                Toast.makeText(MainActivity.this, "Error", Toast.LENGTH_LONG).show();
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+                emptyView();
 
             }
+
+
         });
+
     }
+
+
+
 }
